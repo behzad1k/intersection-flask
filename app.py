@@ -27,10 +27,10 @@ app = Flask(__name__)
 URL_PREFIX = os.getenv('URL_PREFIX', '').rstrip('/')
 
 # Configure Flask
-app.config['SECRET_KEY'] = 'Abasaleh-12'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'Abasaleh-12')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'outputs'
-app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024  # 1000GB max file size
+app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024  # 1000MB max file size
 
 # Configure APPLICATION_ROOT if prefix exists
 if URL_PREFIX:
@@ -40,7 +40,12 @@ if URL_PREFIX:
 Path(app.config['UPLOAD_FOLDER']).mkdir(exist_ok=True)
 Path(app.config['OUTPUT_FOLDER']).mkdir(exist_ok=True)
 
-socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10 ** 8)
+socketio = SocketIO(app,
+                    cors_allowed_origins="*",
+                    max_http_buffer_size=10 ** 8,
+                    async_mode='eventlet',
+                    logger=True,
+                    engineio_logger=True)
 
 # Store processing sessions
 processing_sessions = {}
@@ -294,5 +299,6 @@ def get_stats(session_id):
 # Register the blueprint
 app.register_blueprint(bp)
 
+# For development only
 if __name__ == '__main__':
   socketio.run(app, debug=True, host='0.0.0.0', port=8002, allow_unsafe_werkzeug=True)

@@ -1,4 +1,4 @@
-# Vehicle Counter Web Application - CPU-Only Dockerfile
+# Vehicle Counter Web Application - CPU-Only Dockerfile with WSGI
 # For servers without GPU support
 
 FROM ubuntu:22.04 AS builder
@@ -47,12 +47,14 @@ RUN pip install mmyolo==0.6.0
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 
+# Install WSGI server and eventlet for SocketIO
+RUN pip install gunicorn eventlet
+
 # Final production image
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
-ENV FLASK_APP=app.py
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
@@ -78,7 +80,7 @@ RUN useradd -m -u 1000 appuser && \
 WORKDIR /app
 
 # Copy application files
-COPY --chown=appuser:appuser app.py counter_worker.py directional_counter.py ./
+COPY --chown=appuser:appuser app.py counter_worker.py directional_counter.py wsgi.py ./
 COPY --chown=appuser:appuser templates ./templates/
 COPY --chown=appuser:appuser static ./static/
 COPY --chown=appuser:appuser configs ./configs/
@@ -90,4 +92,5 @@ EXPOSE 8002
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python3 -c "import requests; requests.get('http://localhost:8002/', timeout=5)" || exit 1
 
-CMD ["python3", "app.py"]
+# Use Gunicorn with eventlet worker for SocketIO support
+CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:8002", "--timeout", "300", "--access-logfile", "-", "--error-logfile", "-", "wsgi:app"]
