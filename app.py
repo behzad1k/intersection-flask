@@ -7,6 +7,7 @@ Flask-based frontend for directional vehicle counting
 from flask import Flask, render_template, request, jsonify, send_file, session
 from flask_socketio import SocketIO, emit
 from werkzeug.utils import secure_filename
+from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 import json
 import pickle
@@ -22,6 +23,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+
+# Tell Flask it's behind a proxy at /intersection-cam
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+# Get the script name (proxy prefix) from environment
+SCRIPT_NAME = os.getenv('SCRIPT_NAME', '')
+if SCRIPT_NAME:
+  app.config['APPLICATION_ROOT'] = SCRIPT_NAME
 
 # Configure Flask
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'Abasaleh-12')
