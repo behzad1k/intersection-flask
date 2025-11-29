@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Counter — Traffic Analysis System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <span class="traffic-light red"></span>
+                        <span class="traffic-light yellow"></span>
+                        <span class="traffic-light green"></span>
+                    </div>
+                    <h1>VEHICLE COUNTER</h1>
+                </div>
+                <div class="logo-img">
+                    <img width="300" height="60" src="{{ url_for('static', filename='img/logo.png') }}" />
+                </div>
+                <div class="header-status">
+                    <span class="status-indicator" id="status">READY</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Step 1: Upload -->
+            <section id="upload-section" class="section active">
+                <div class="section-header">
+                    <span class="step-number">01</span>
+                    <h2>VIDEO UPLOAD</h2>
+                </div>
+                
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                        </svg>
+                    </div>
+                    <h3>Drop video file here or click to browse</h3>
+                    <p class="upload-info">Supports MP4, AVI, MOV — Max 500MB</p>
+                    <input type="file" id="video-input" accept="video/*" hidden>
+                    <button class="btn btn-primary" id="browse-btn">BROWSE FILES</button>
+                </div>
+
+                <div class="video-info" id="video-info" style="display: none;">
+                    <h3>VIDEO INFORMATION</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">RESOLUTION</span>
+                            <span class="info-value" id="video-resolution">—</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">DURATION</span>
+                            <span class="info-value" id="video-duration">—</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">FPS</span>
+                            <span class="info-value" id="video-fps">—</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">FRAMES</span>
+                            <span class="info-value" id="video-frames">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-panel" id="config-panel" style="display: none;">
+                    <h3>DETECTION PARAMETERS</h3>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>MODEL SIZE</label>
+                            <select id="model-select" class="form-control">
+                                <option value="femto_352">Femto (352px) — Fastest</option>
+                                <option value="femto_512" selected>Femto (512px) — Fast</option>
+                                <option value="pico_512">Pico (512px) — Balanced</option>
+                                <option value="nano_448">Nano (448px)</option>
+                                <option value="nano_512">Nano (512px)</option>
+                                <option value="nano_640">Nano (640px)</option>
+                                <option value="small">Small — Better</option>
+                                <option value="medium">Medium — High Quality</option>
+                                <option value="large">Large — Best Quality</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>CONFIDENCE <span id="conf-value">0.25</span></label>
+                            <input type="range" id="conf-slider" min="0.1" max="0.9" step="0.05" value="0.25" class="slider">
+                        </div>
+
+                        <div class="form-group">
+                            <label>MIN DETECTIONS <span id="min-det-value">7</span></label>
+                            <input type="range" id="min-det-slider" min="3" max="20" step="1" value="7" class="slider">
+                        </div>
+
+                        <div class="form-group">
+                            <label>DETECTION WINDOW <span id="det-win-value">10</span></label>
+                            <input type="range" id="det-win-slider" min="5" max="30" step="1" value="10" class="slider">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="draw-boxes" checked>
+                                <span>DRAW DETECTION BOXES</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-large" id="next-to-zones">
+                        CONFIGURE ZONES →
+                    </button>
+                </div>
+            </section>
+
+            <!-- Step 2: Zone Configuration -->
+            <section id="zone-section" class="section">
+                <div class="section-header">
+                    <span class="step-number">02</span>
+                    <h2>ZONE CONFIGURATION</h2>
+                </div>
+
+                <div class="zone-config">
+                    <div class="zone-canvas-container">
+                        <canvas id="zone-canvas"></canvas>
+                        <img id="zone-image" style="display: none;">
+                    </div>
+
+                    <div class="zone-controls">
+                        <div class="zone-mode">
+                            <h3>CURRENT MODE</h3>
+                            <div class="mode-switch">
+                                <button class="mode-btn active" data-mode="zone">DETECTION ZONES</button>
+                                <button class="mode-btn" data-mode="line">COUNTING LINES</button>
+                            </div>
+                        </div>
+
+                        <div class="zone-instructions">
+                            <div id="zone-mode-instructions">
+                                <h4>DETECTION ZONES</h4>
+                                <ul>
+                                    <li>Click to add points</li>
+                                    <li>Press ENTER to complete zone</li>
+                                    <li>Press ESC to cancel</li>
+                                    <li>Click "Next" when done</li>
+                                </ul>
+                            </div>
+                            <div id="line-mode-instructions" style="display: none;">
+                                <h4>COUNTING LINES</h4>
+                                <ul>
+                                    <li>Click two points to create line</li>
+                                    <li>Enter direction name</li>
+                                    <li>Repeat for each direction</li>
+                                    <li>Click "Start Processing" when done</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="zone-list">
+                            <h4>ZONES (<span id="zone-count">0</span>)</h4>
+                            <div id="zones-list" class="list-items"></div>
+                        </div>
+
+                        <div class="zone-list">
+                            <h4>LINES (<span id="line-count">0</span>)</h4>
+                            <div id="lines-list" class="list-items"></div>
+                        </div>
+
+                        <div class="zone-actions">
+                            <button class="btn btn-secondary" id="clear-current">CLEAR CURRENT</button>
+                            <button class="btn btn-secondary" id="reset-all">RESET ALL</button>
+                            <button class="btn btn-primary btn-large" id="start-processing">
+                                START PROCESSING →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 3: Processing -->
+            <section id="processing-section" class="section">
+                <div class="section-header">
+                    <span class="step-number">03</span>
+                    <h2>PROCESSING</h2>
+                </div>
+
+                <div class="processing-layout">
+                    <div class="video-preview">
+                        <div class="preview-container">
+                            <img id="preview-frame" src="" alt="Processing preview">
+                            <div class="preview-overlay">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progress-fill"></div>
+                                </div>
+                                <div class="progress-info">
+                                    <span id="progress-text">0%</span>
+                                    <span id="frame-info">Frame 0 / 0</span>
+                                    <span id="fps-info">0 FPS</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stats-panel">
+                        <h3>LIVE COUNTS</h3>
+                        <div class="total-counter">
+                            <span class="counter-label">TOTAL</span>
+                            <span class="counter-value" id="total-count">0</span>
+                        </div>
+
+                        <div class="direction-counters" id="direction-counters">
+                            <!-- Dynamic content -->
+                        </div>
+
+                        <div class="class-breakdown" id="class-breakdown">
+                            <!-- Dynamic content -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 4: Results -->
+            <section id="results-section" class="section">
+                <div class="section-header">
+                    <span class="step-number">04</span>
+                    <h2>RESULTS</h2>
+                </div>
+
+                <div class="results-layout">
+                    <div class="results-summary">
+                        <h3>SUMMARY</h3>
+                        <div class="summary-grid">
+                            <div class="summary-card">
+                                <span class="summary-label">TOTAL VEHICLES</span>
+                                <span class="summary-value" id="final-total">0</span>
+                            </div>
+                            <div class="summary-card">
+                                <span class="summary-label">FRAMES PROCESSED</span>
+                                <span class="summary-value" id="final-frames">0</span>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary btn-large" id="download-btn">
+                            ⬇ DOWNLOAD PROCESSED VIDEO
+                        </button>
+                        <button class="btn btn-secondary btn-large" id="new-analysis-btn">
+                            ⟳ NEW ANALYSIS
+                        </button>
+                    </div>
+
+                    <div class="charts-container">
+                        <div class="chart-box">
+                            <h4>VEHICLES BY DIRECTION</h4>
+                            <canvas id="direction-chart"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <h4>VEHICLES BY CLASS</h4>
+                            <canvas id="class-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
