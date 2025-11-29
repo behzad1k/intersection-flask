@@ -27,7 +27,7 @@ app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024  # 1000GB max file size
 Path(app.config['UPLOAD_FOLDER']).mkdir(exist_ok=True)
 Path(app.config['OUTPUT_FOLDER']).mkdir(exist_ok=True)
 
-socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10**8, allow_unsafe_werkzeug=True)
+socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10**8)
 
 # Store processing sessions
 processing_sessions = {}
@@ -273,4 +273,4 @@ def get_stats(session_id):
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=8002)
+    socketio.run(app, debug=True, host='0.0.0.0', port=8002, allow_unsafe_werkzeug=True)
