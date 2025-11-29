@@ -1,6 +1,7 @@
 // Vehicle Counter Web Application
 // Main JavaScript
-
+// Get the URL prefix from the template
+const URL_PREFIX = window.URL_PREFIX || '';
 // Global state
 let sessionId = null;
 let socket = null;
@@ -65,7 +66,7 @@ async function handleFileUpload(file) {
     formData.append('video', file);
 
     try {
-        const response = await fetch('/upload', {
+        const response = await fetch(apiUrl('/upload'), {
             method: 'POST',
             body: formData
         });
@@ -124,8 +125,9 @@ async function loadZoneConfiguration() {
     updateStatus('LOADING');
 
     try {
+        console.log()
         // Load first frame
-        const frameUrl = `/frame/${sessionId}`;
+        const frameUrl = `${URL_PREFIX}/frame/${sessionId}`;
         img = new Image();
         img.src = frameUrl;
 
@@ -424,7 +426,7 @@ async function startProcessing() {
 
     // Save configuration
     try {
-        const configResponse = await fetch('/configure', {
+        const configResponse = await fetch(apiUrl('/configure'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -443,7 +445,7 @@ async function startProcessing() {
         const detWin = parseInt(document.getElementById('det-win-slider').value);
         const drawBoxes = document.getElementById('draw-boxes').checked;
 
-        const processResponse = await fetch('/process', {
+        const processResponse = await fetch(apiUrl('/process'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -482,10 +484,16 @@ async function startProcessing() {
     }
 }
 
+function apiUrl(path) {
+    return URL_PREFIX + path;
+}
+
 // ============ WEBSOCKET ============
 
 function initializeWebSocket() {
-    socket = io();
+    socket = io({
+    path: URL_PREFIX ? `${URL_PREFIX}/socket.io` : '/socket.io'
+});
 
     socket.on('connect', () => {
         console.log('WebSocket connected');

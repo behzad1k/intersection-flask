@@ -25,7 +25,7 @@ services:
 
     # Environment variables
     environment:
-      - SCRIPT_NAME=intersection-cam
+      - URL_PREFIX=/intersection-cam
       - SECRET_KEY=Abasaleh-12
       - FLASK_ENV=production
       - PYTHONUNBUFFERED=1
