@@ -592,7 +592,7 @@ function showResults(stats) {
 
     // Download button
     document.getElementById('download-btn').addEventListener('click', () => {
-        window.location.href = `/download/${sessionId}`;
+        window.location.href = `${URL_PREFIX}/download/${sessionId}`;
     });
 
     // New analysis button
