@@ -15,13 +15,13 @@ services:
       - "8002:8002"
 
     # GPU support (optional - comment out if no GPU)
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              count: 1
+#              capabilities: [gpu]
 
     # Environment variables
     environment:
