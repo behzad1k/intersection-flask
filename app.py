@@ -18,16 +18,16 @@ import cv2
 import numpy as np
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'vehicle-counter-secret-key'
+app.config['SECRET_KEY'] = 'Abasaleh-12'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'outputs'
-app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024  # 1000GB max file size
 
 # Create folders
 Path(app.config['UPLOAD_FOLDER']).mkdir(exist_ok=True)
 Path(app.config['OUTPUT_FOLDER']).mkdir(exist_ok=True)
 
-socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10**8)
+socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10**8, allow_unsafe_werkzeug=True)
 
 # Store processing sessions
 processing_sessions = {}
