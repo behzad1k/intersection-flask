@@ -52,6 +52,11 @@ socketio = SocketIO(app,
 # Store processing sessions
 processing_sessions = {}
 
+# Make SCRIPT_NAME available in templates
+@app.context_processor
+def inject_script_name():
+    """Make SCRIPT_NAME available in all templates"""
+    return {'SCRIPT_NAME': SCRIPT_NAME}
 
 @app.route('/')
 def index():
