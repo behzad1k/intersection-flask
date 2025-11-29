@@ -4,7 +4,7 @@ Vehicle Counter Web Application
 Flask-based frontend for directional vehicle counting
 """
 
-from flask import Flask, render_template, request, jsonify, send_file, session, Blueprint
+from flask import Flask, render_template, request, jsonify, send_file, session
 from flask_socketio import SocketIO, emit
 from werkzeug.utils import secure_filename
 import os
@@ -23,18 +23,11 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Get URL prefix from environment
-URL_PREFIX = os.getenv('URL_PREFIX', '').rstrip('/')
-
 # Configure Flask
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'Abasaleh-12')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'outputs'
 app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024  # 1000MB max file size
-
-# Configure APPLICATION_ROOT if prefix exists
-if URL_PREFIX:
-  app.config['APPLICATION_ROOT'] = URL_PREFIX
 
 # Create folders
 Path(app.config['UPLOAD_FOLDER']).mkdir(exist_ok=True)
@@ -50,20 +43,14 @@ socketio = SocketIO(app,
 # Store processing sessions
 processing_sessions = {}
 
-# Create blueprint with URL prefix
-bp = Blueprint('main', __name__,
-               url_prefix=URL_PREFIX if URL_PREFIX else None,
-               static_folder='static',
-               static_url_path='/static')
 
-
-@bp.route('/')
+@app.route('/')
 def index():
   """Main upload page"""
   return render_template('index.html')
 
 
-@bp.route('/upload', methods=['POST'])
+@app.route('/upload', methods=['POST'])
 def upload_video():
   """Handle video upload"""
   if 'video' not in request.files:
@@ -118,11 +105,11 @@ def upload_video():
     'fps': fps,
     'total_frames': total_frames,
     'duration': round(total_frames / fps, 2) if fps > 0 else 0,
-    'frame_url': f'{URL_PREFIX}/frame/{session_id}'
+    'frame_url': f'/frame/{session_id}'
   })
 
 
-@bp.route('/frame/<session_id>')
+@app.route('/frame/<session_id>')
 def get_frame(session_id):
   """Serve the first frame for zone configuration"""
   if session_id not in processing_sessions:
@@ -132,7 +119,7 @@ def get_frame(session_id):
   return send_file(frame_path, mimetype='image/jpeg')
 
 
-@bp.route('/configure', methods=['POST'])
+@app.route('/configure', methods=['POST'])
 def save_configuration():
   """Save zone and line configuration"""
   data = request.json
@@ -159,7 +146,7 @@ def save_configuration():
   return jsonify({'success': True})
 
 
-@bp.route('/process', methods=['POST'])
+@app.route('/process', methods=['POST'])
 def start_processing():
   """Start video processing"""
   data = request.json
@@ -264,7 +251,7 @@ def process_video_worker(session_id):
     })
 
 
-@bp.route('/download/<session_id>')
+@app.route('/download/<session_id>')
 def download_video(session_id):
   """Download processed video"""
   if session_id not in processing_sessions:
@@ -282,7 +269,7 @@ def download_video(session_id):
   )
 
 
-@bp.route('/stats/<session_id>')
+@app.route('/stats/<session_id>')
 def get_stats(session_id):
   """Get processing statistics"""
   if session_id not in processing_sessions:
@@ -295,9 +282,6 @@ def get_stats(session_id):
 
   return jsonify(session['stats'])
 
-
-# Register the blueprint
-app.register_blueprint(bp)
 
 # For development only
 if __name__ == '__main__':
