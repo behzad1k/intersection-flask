@@ -10,3 +10,4 @@ mmcv==2.0.1
 mmdet==3.3.0
 mmengine==0.10.7
 mmyolo==0.6.0
+python-dotenv==1.0.1
