@@ -25,6 +25,7 @@ services:
 
     # Environment variables
     environment:
+      - URL_PREFIX=/intersection-cam
       - FLASK_ENV=production
       - PYTHONUNBUFFERED=1
 
