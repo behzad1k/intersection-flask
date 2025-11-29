@@ -32,14 +32,9 @@ services:
 
     # Persistent volumes
     volumes:
-      # Model weights (read-only)
-      - ./weights:/app/weights:ro
-      # Uploads (temporary)
       - ./uploads:/app/uploads
-      # Outputs (persistent)
       - ./outputs:/app/outputs
-      # Logs
-      - ./logs:/app/logs
+      - ./weights:/app/weights
 
     # Health check
     healthcheck:
